@@ -28,7 +28,7 @@ func (m SplashModel) View() string {
 ╚═════╝░╚═╝░░░░░╚═╝░░╚═╝░╚════╝░╚══════╝  ░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚═╝╚═════╝░╚══════╝╚═╝░░╚═╝╚═════╝░
 `
 	s += "\n\n"
-	s += "Press enter to continue\n"
+	s += "Press enter to login\n"
 	s += "Press q to quit...\n"
 	return s
 }

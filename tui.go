@@ -4,6 +4,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/dustin-ward/space-traders-tui/internal/auth"
+	"github.com/dustin-ward/space-traders-tui/internal/constants"
 	"github.com/dustin-ward/space-traders-tui/internal/home"
 	"github.com/dustin-ward/space-traders-tui/internal/splash"
 )
@@ -12,7 +13,7 @@ type sessionState int
 
 const (
 	splashScreen sessionState = iota
-	loginScreen
+	authScreen
 	homeScreen
 )
 
@@ -26,36 +27,31 @@ func (m MainModel) Init() tea.Cmd {
 }
 
 func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		constants.WindowSize = msg
+	case splash.ContMsg:
+		m.state = authScreen
+	case auth.ContMsg:
+		m.state = homeScreen
+	case auth.BackMsg:
+		m.state = splashScreen
+	case home.BackMsg:
+		m.state = splashScreen
+	}
+
+	var cmd tea.Cmd
 	switch m.state {
 	case splashScreen:
-		switch msg.(type) {
-		case splash.ContMsg:
-			m.state = loginScreen
-		}
-
-		var cmd tea.Cmd
 		m.models[splashScreen], cmd = m.models[splashScreen].Update(msg)
 		return m, cmd
 
-	case loginScreen:
-		switch msg.(type) {
-		case auth.ContMsg:
-			m.state = homeScreen
-		case auth.BackMsg:
-			m.state = splashScreen
-		}
-
-		var cmd tea.Cmd
-		m.models[loginScreen], cmd = m.models[loginScreen].Update(msg)
+	case authScreen:
+		// m.models[authScreen] = *auth.NewAuthModel()
+		m.models[authScreen], cmd = m.models[authScreen].Update(msg)
 		return m, cmd
 
 	case homeScreen:
-		switch msg.(type) {
-		case home.BackMsg:
-			m.state = splashScreen
-		}
-
-		var cmd tea.Cmd
 		m.models[homeScreen], cmd = m.models[homeScreen].Update(msg)
 		return m, cmd
 
@@ -72,7 +68,7 @@ func NewMainModel() *MainModel {
 		state: splashScreen,
 		models: map[sessionState]tea.Model{
 			splashScreen: splash.NewSplashModel(),
-			loginScreen:  auth.NewAuthModel(),
+			authScreen:   auth.NewAuthModel(),
 			homeScreen:   home.NewHomeModel(),
 		},
 	}
