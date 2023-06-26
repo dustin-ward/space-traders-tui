@@ -46,6 +46,7 @@ func NewAuthModel() *AuthModel {
 			Account{Callsign: "SHRUB", Faction: "VOID", Token: "st;oij3ltk3jtkdfjf3"},
 			Account{Callsign: "TestCallsign1", Faction: "TEST", Token: "st;oij3ltk3jtkdfjf3"},
 		}, list.NewDefaultDelegate(), 20, 30),
+		form: NewCreateModel(),
 	}
 	if constants.WindowSize.Height != 0 {
 		m.accountList.SetSize(constants.WindowSize.Width, constants.WindowSize.Height)
@@ -59,26 +60,49 @@ func (m AuthModel) Init() tea.Cmd {
 }
 
 func (m AuthModel) View() string {
-	return accountListStyle.Render(m.accountList.View())
+	switch m.state {
+	case selectState:
+		return accountListStyle.Render(m.accountList.View())
+	case createState:
+		return m.form.View()
+	}
+	return "ERROR"
 }
 
 func (m AuthModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-		case "esc":
-			return m, func() tea.Msg { return BackMsg{} }
-		case "enter":
-			return m, func() tea.Msg { return ContMsg{} }
+		switch m.state {
+		case selectState:
+			switch msg.String() {
+			case "ctrl+c", "q":
+				return m, tea.Quit
+			case "esc":
+				return m, func() tea.Msg { return BackMsg{} }
+			case "enter":
+				return m, func() tea.Msg { return ContMsg{} }
+			case "c":
+				m.state = createState
+			}
 		}
 	case tea.WindowSizeMsg:
 		h, v := accountListStyle.GetFrameSize()
 		m.accountList.SetSize(msg.Width-h, msg.Height-v)
+	case CancelCreateMsg:
+		m.state = selectState
+	case CreatedMsg:
+		m.state = selectState
 	}
 
 	var cmd tea.Cmd
-	m.accountList, cmd = m.accountList.Update(msg)
-	return m, cmd
+	switch m.state {
+	case selectState:
+		m.accountList, cmd = m.accountList.Update(msg)
+		return m, cmd
+
+	case createState:
+		m.form, cmd = m.form.Update(msg)
+		return m, cmd
+	}
+	return m, nil
 }
